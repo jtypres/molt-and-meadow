@@ -1,12 +1,18 @@
 import {
   S, load, save, resetGame, advance, pollenPerSec, restorePlot, upgradePlot,
   openJar, buyJar, getCreature, feed, mist, buyDecor,
+  exportSave, exportCode, importSave, markBackedUp, snoozeBackup,
 } from './state.js';
 import { BY_ID, SPEED } from './data.js';
 import * as UI from './screens.js';
 import { fmt, fmtRate, fmtDur } from './util.js';
 
-const ui = { route: 'meadow', findSet: 'desert', journalSet: 'desert', msg: {}, modal: false, busy: false };
+const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+const touch = window.matchMedia('(pointer: coarse)').matches;
+const ui = {
+  route: 'meadow', findSet: 'desert', journalSet: 'desert', msg: {}, modal: false, busy: false,
+  standalone, showInstallTip: touch && !standalone, persisted: null,
+};
 const $ = (sel) => document.querySelector(sel);
 
 // ---------- Rendering ----------
@@ -20,7 +26,7 @@ function render() {
   else if (ui.route === 'shelf') html = UI.shelfScreen(now);
   else if (ui.route === 'journal') html = UI.journalScreen(now, ui);
   else if (ui.route.startsWith('creature:')) html = UI.creatureScreen(Number(ui.route.split(':')[1]), now, ui);
-  else html = UI.meadowScreen(now);
+  else html = UI.meadowScreen(now, ui);
   $('#screen').innerHTML = html;
   live(now);
 }
@@ -76,6 +82,75 @@ function toast(text) {
 }
 
 const needMsg = (n, what = 'pollen') => toast(`You need ${fmt(Math.ceil(n))} more ${what}.`);
+
+// ---------- Backup and restore ----------
+
+function downloadFile(file) {
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+async function backupFile() {
+  const now = Date.now();
+  const name = `molt-and-meadow-backup-${new Date(now).toISOString().slice(0, 10)}.json`;
+  const file = new File([exportSave(now)], name, { type: 'application/json' });
+  // On phones the share sheet is the most reliable way to save a file (Files, email, Messages).
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Molt & Meadow backup' });
+      markBackedUp(Date.now());
+      toast('Backup saved.');
+    } catch (e) {
+      if (e.name !== 'AbortError') { downloadFile(file); markBackedUp(Date.now()); toast('Backup downloaded.'); }
+    }
+  } else {
+    downloadFile(file);
+    markBackedUp(Date.now());
+    toast('Backup downloaded.');
+  }
+  refreshBackupModal();
+}
+
+async function backupCopy() {
+  const code = exportCode(Date.now());
+  try {
+    await navigator.clipboard.writeText(code);
+    markBackedUp(Date.now());
+    toast('Save code copied. Paste it somewhere safe, like a text to yourself.');
+    refreshBackupModal();
+  } catch (e) {
+    // Clipboard blocked: show the code so it can be copied by hand.
+    const box = $('#restore-code');
+    if (box) { box.value = code; box.focus(); box.select(); }
+    markBackedUp(Date.now());
+    toast('Copy the selected code and keep it somewhere safe.');
+  }
+}
+
+function restoreFrom(text) {
+  try {
+    importSave(text, Date.now());
+  } catch (e) {
+    toast("That doesn't look like a Molt & Meadow save.");
+    return;
+  }
+  ui.msg = {};
+  closeModal();
+  go('meadow');
+  toast('Your meadow is restored!');
+}
+
+function refreshBackupModal() {
+  if (ui.modal && $('#modal-root .backup')) {
+    $('#modal-root .modal').innerHTML = UI.backupModal(Date.now(), ui);
+  }
+}
 
 // ---------- Actions ----------
 
@@ -143,6 +218,16 @@ const actions = {
   rename(el) { openModal(UI.renameModal(getCreature(Number(el.dataset.id)))); },
   species(el) { openModal(UI.speciesModal(el.dataset.id)); },
   reset() { openModal(UI.resetModal()); },
+  backup() { openModal(UI.backupModal(Date.now(), ui)); },
+  'backup-file'() { backupFile(); },
+  'backup-copy'() { backupCopy(); },
+  'restore-code'() {
+    const text = ($('#restore-code')?.value || '').trim();
+    if (!text) { toast('Paste a save code first.'); return; }
+    restoreFrom(text);
+  },
+  'snooze-backup'() { snoozeBackup(Date.now()); render(); },
+  'hide-install-tip'() { S.hideInstallTip = true; save(); render(); },
   'confirm-reset'() {
     resetGame(Date.now());
     ui.msg = {};
@@ -175,7 +260,21 @@ document.addEventListener('submit', (e) => {
   render();
 });
 
+document.addEventListener('change', (e) => {
+  const input = e.target.closest('[data-restore-file]');
+  if (!input || !input.files || !input.files[0]) return;
+  input.files[0].text().then(restoreFrom, () => toast("Couldn't read that file."));
+});
+
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+// Ask the browser not to clear this site's storage when space runs low.
+async function protectStorage() {
+  try {
+    if (!navigator.storage || !navigator.storage.persist) return;
+    ui.persisted = (await navigator.storage.persisted()) || (await navigator.storage.persist());
+  } catch (e) { /* not supported */ }
+}
 
 // ---------- Game loop ----------
 
@@ -200,6 +299,7 @@ function boot() {
   const ev = advance(now);
   save();
   render();
+  protectStorage();
   if (isNew || !S.seenIntro) {
     S.seenIntro = true;
     save();

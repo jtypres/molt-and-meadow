@@ -9,7 +9,9 @@ A cozy idle game about real bugs. Restore a meadow, open field jars to discover 
 
 ## Play
 
-Open the live page on a phone and use "Add to Home Screen" to keep it like an app. Your save lives in that browser.
+Open the live page on a phone and use "Add to Home Screen" to keep it like an app. Play from the Home Screen icon: on iPhone, Safari can clear saves for websites you haven't opened in about a week, but not for Home Screen apps.
+
+Your save lives on the device. Use **Journal → Backup & restore** to save a backup file or copy a save code, and restore it on any device. The game reminds you to back up about once a week.
 
 ## Run locally
 

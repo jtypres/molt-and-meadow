@@ -41,7 +41,23 @@ function fresh(now) {
     journal: { 'red-knee': { count: 1, morphs: [] } },
     visitors: {},
     seenIntro: false,
+    firstPlayed: now,
+    lastBackup: 0,
+    backupSnooze: 0,
+    hideInstallTip: false,
   };
+}
+
+function migrate(data, now) {
+  if (!data.firstPlayed) data.firstPlayed = now;
+  if (data.lastBackup === undefined) data.lastBackup = 0;
+  if (data.backupSnooze === undefined) data.backupSnooze = 0;
+  if (data.hideInstallTip === undefined) data.hideInstallTip = false;
+  return data;
+}
+
+function isValidSave(data) {
+  return !!data && data.v === 1 && data.plots && Array.isArray(data.creatures) && data.journal && data.jars;
 }
 
 export function load(now) {
@@ -49,11 +65,62 @@ export function load(now) {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const data = JSON.parse(raw);
-      if (data && data.v === 1) { S = data; return false; }
+      if (isValidSave(data)) { S = migrate(data, now); return false; }
     }
   } catch (e) { /* storage blocked or corrupt: start fresh */ }
   S = fresh(now);
   return true;
+}
+
+// ---------- Backup and restore ----------
+
+const BACKUP_EVERY_MS = 7 * 24 * 3600 * 1000;
+
+const toB64 = (str) => {
+  let bin = '';
+  new TextEncoder().encode(str).forEach((b) => { bin += String.fromCharCode(b); });
+  return btoa(bin);
+};
+const fromB64 = (b64) => new TextDecoder().decode(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
+
+export function exportSave(now) {
+  return JSON.stringify({ app: 'molt-and-meadow', version: 1, exportedAt: new Date(now).toISOString(), save: S });
+}
+
+export function exportCode(now) {
+  return `MM1.${toB64(exportSave(now))}`;
+}
+
+export function markBackedUp(now) {
+  S.lastBackup = now;
+  S.backupSnooze = 0;
+  save();
+}
+
+// Accepts either a backup file's text or a save code. Throws if it isn't a valid save.
+export function importSave(text, now) {
+  let t = String(text).trim();
+  if (t.startsWith('MM1.')) t = fromB64(t.slice(4).replace(/\s+/g, ''));
+  const obj = JSON.parse(t);
+  const data = obj && obj.app === 'molt-and-meadow' ? obj.save : null;
+  if (!isValidSave(data)) throw new Error('Not a Molt & Meadow save');
+  migrate(data, now);
+  data.lastSeen = now;
+  data.seenIntro = true;
+  data.lastBackup = now;
+  S = data;
+  save();
+}
+
+export function backupDue(now) {
+  const progress = Object.keys(S.journal).length >= 2;
+  const since = now - (S.lastBackup || S.firstPlayed);
+  return progress && since > BACKUP_EVERY_MS && now > (S.backupSnooze || 0);
+}
+
+export function snoozeBackup(now) {
+  S.backupSnooze = now + 3 * 24 * 3600 * 1000;
+  save();
 }
 
 export function save() {

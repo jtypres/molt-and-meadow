@@ -1,6 +1,6 @@
 import {
   S, pollenPerSec, multiplier, careBonus, upgradeCost, nextJarIn, MAX_LEVEL,
-  mood, humidityNow, growthInfo, getCreature,
+  mood, humidityNow, growthInfo, getCreature, backupDue,
 } from './state.js';
 import { SPECIES, BY_ID, PLOTS, SETS, DECOR, RARITY, TIMING } from './data.js';
 import { creatureSVG, sceneSVG, plotSVG, jarSVG, ICON } from './art.js';
@@ -34,9 +34,22 @@ export function tabs(route) {
 
 // ---------- Meadow ----------
 
-export function meadowScreen(now) {
+function banners(now, ui) {
+  let html = '';
+  if (ui.showInstallTip && !S.hideInstallTip) {
+    html += `<section class="banner"><p><b>Keep your save safe:</b> add Molt &amp; Meadow to your Home Screen and play from there. In Safari, tap Share, then Add to Home Screen.</p>
+      <div class="row"><button class="btn small secondary" data-action="hide-install-tip">Got it</button></div></section>`;
+  }
+  if (backupDue(now)) {
+    html += `<section class="banner"><p><b>Time for a backup.</b> It's been a while, so save a copy of your meadow in case your phone clears it.</p>
+      <div class="row"><button class="btn small secondary" data-action="snooze-backup">Later</button><button class="btn small" data-action="backup">Back up now</button></div></section>`;
+  }
+  return html;
+}
+
+export function meadowScreen(now, ui) {
   const visitors = Object.entries(S.visitors).filter(([, n]) => n > 0);
-  return `<section class="head"><h1>The Meadow</h1><p>Restore plots to bring wild bugs back. They earn pollen, even while you're away.</p></section>
+  return `${banners(now, ui)}<section class="head"><h1>The Meadow</h1><p>Restore plots to bring wild bugs back. They earn pollen, even while you're away.</p></section>
   <div class="bonus-row"><span>Pollen boost</span><b>+${pct(multiplier(now) - 1)}</b><small>from happy pets and meadow visitors</small></div>
   <div class="plots">${PLOTS.map((p) => plotCard(p, S.plots[p.id], now)).join('')}</div>
   <section class="card"><h2>Visiting now</h2>${visitors.length
@@ -214,7 +227,38 @@ export function journalScreen(now, ui) {
     return `<button role="tab" aria-selected="${s.id === set}" data-action="journal-set" data-id="${s.id}">${s.name}<span class="count">${f}/${pool.length}</span></button>`;
   }).join('')}</div>
   <div class="jgrid">${cards}</div>
+  <section class="card"><h2>Your save</h2><p class="muted">${lastBackupText(now)}</p><button class="btn" data-action="backup">Backup &amp; restore</button></section>
   <p class="footer-note">Every creature here is a real species, drawn from photos and field guides.<br><button class="link" data-action="reset">Start over</button></p>`;
+}
+
+function lastBackupText(now) {
+  if (!S.lastBackup) return 'Not backed up yet.';
+  const days = Math.floor((now - S.lastBackup) / 86400000);
+  if (days === 0) return 'Last backup: today.';
+  return `Last backup: ${days} ${days === 1 ? 'day' : 'days'} ago.`;
+}
+
+export function backupModal(now, ui) {
+  let keep;
+  if (ui.persisted === true) keep = 'Your browser has agreed to keep this save, but a backup still protects you if you clear your data or change phones.';
+  else keep = 'Your browser could clear this save if your phone runs low on space or you clear browsing data, so keep a backup.';
+  return `<div class="reveal backup">
+    <h2 id="modal-title">Backup &amp; restore</h2>
+    <p class="muted">${lastBackupText(now)} ${keep}</p>
+    ${ui.standalone ? '' : '<p class="tip"><b>Tip:</b> add this game to your Home Screen and play from there. On iPhone, Safari can delete saves for websites you haven\'t opened in about a week, but not for Home Screen apps.</p>'}
+    <h3>Back up</h3>
+    <p>Save a backup file to your phone, or copy a save code and text or email it to yourself.</p>
+    <div class="row"><button class="btn" data-action="backup-file">Save backup file</button><button class="btn secondary" data-action="backup-copy">Copy save code</button></div>
+    <h3>Restore</h3>
+    <p>Restoring replaces the game on this device with the backup.</p>
+    <label for="restore-code">Paste a save code</label>
+    <textarea id="restore-code" rows="3" spellcheck="false" autocomplete="off" placeholder="MM1.…"></textarea>
+    <div class="row">
+      <label class="btn secondary file-btn">Choose backup file<input type="file" accept=".json,application/json" class="sr-only" data-restore-file></label>
+      <button class="btn" data-action="restore-code">Restore code</button>
+    </div>
+    <div class="row"><button class="btn secondary" data-action="close-modal">Close</button></div>
+  </div>`;
 }
 
 export function speciesModal(id) {
