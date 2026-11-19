@@ -1,10 +1,10 @@
 import {
   S, pollenPerSec, multiplier, careBonus, upgradeCost, nextJarIn, MAX_LEVEL,
   mood, humidityNow, growthInfo, getCreature, backupDue,
-} from './state.js';
-import { SPECIES, BY_ID, PLOTS, SETS, DECOR, RARITY, TIMING } from './data.js';
-import { creatureSVG, sceneSVG, plotSVG, jarSVG, ICON } from './art.js';
-import { esc, fmt, fmtRate, fmtDur } from './util.js';
+} from './state.js?v=202611191045';
+import { SPECIES, BY_ID, PLOTS, SETS, DECOR, RARITY, TIMING } from './data.js?v=202611191045';
+import { creatureSVG, sceneSVG, plotSVG, jarSVG, ICON } from './art.js?v=202611191045';
+import { esc, fmt, fmtRate, fmtDur } from './util.js?v=202611191045';
 
 const pct = (x) => `${Math.round(x * 100)}%`;
 const morphOf = (sp, id) => (sp.morphs || []).find((m) => m.id === id);

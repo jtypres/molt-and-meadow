@@ -24,3 +24,7 @@ Then open http://localhost:5173. Add `?fast` to the address to run all timers 60
 ## Art
 
 All creature art is original, hand-built SVG in `js/art.js`, drawn from reference photos. Fonts are Fredoka and Nunito (SIL Open Font License) from Google Fonts.
+
+## Publishing an update
+
+Run `./scripts/bump-version.sh` before each push. It stamps a new version onto every script and stylesheet, so phones load the new code instead of a cached copy.

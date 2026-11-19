@@ -1,7 +1,7 @@
 // All creature art is hand-built SVG following the Molt & Meadow style guide:
 // flat fills, round strokes, 3-4 colors per species, eye glints as the only cartoon touch.
-import { SETS } from './data.js';
-import { esc } from './util.js';
+import { SETS } from './data.js?v=202611191045';
+import { esc } from './util.js?v=202611191045';
 
 const INK = '#2b211c';
 const W = '#ffffff';

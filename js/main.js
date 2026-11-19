@@ -2,10 +2,10 @@ import {
   S, load, save, resetGame, advance, pollenPerSec, restorePlot, upgradePlot,
   openJar, buyJar, getCreature, feed, mist, buyDecor,
   exportSave, exportCode, importSave, markBackedUp, snoozeBackup,
-} from './state.js';
-import { BY_ID, SPEED } from './data.js';
-import * as UI from './screens.js';
-import { fmt, fmtRate, fmtDur } from './util.js';
+} from './state.js?v=202611191045';
+import { BY_ID, SPEED } from './data.js?v=202611191045';
+import * as UI from './screens.js?v=202611191045';
+import { fmt, fmtRate, fmtDur } from './util.js?v=202611191045';
 
 const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 const touch = window.matchMedia('(pointer: coarse)').matches;

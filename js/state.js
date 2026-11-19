@@ -1,4 +1,4 @@
-import { SPECIES, BY_ID, PLOTS, DECOR, RARITY, TIMING, SPEED, PET_NAMES } from './data.js';
+import { SPECIES, BY_ID, PLOTS, DECOR, RARITY, TIMING, SPEED, PET_NAMES } from './data.js?v=202611191045';
 
 const KEY = 'molt-meadow-v1';
 export const MAX_LEVEL = 10;
