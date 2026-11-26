@@ -1,7 +1,7 @@
 // All creature art is hand-built SVG following the Molt & Meadow style guide:
 // flat fills, round strokes, 3-4 colors per species, eye glints as the only cartoon touch.
-import { SETS } from './data.js?v=202611191045';
-import { esc } from './util.js?v=202611191045';
+import { SETS } from './data.js?v=202611252038';
+import { esc } from './util.js?v=202611252038';
 
 const INK = '#2b211c';
 const W = '#ffffff';
@@ -17,28 +17,33 @@ function tarantula(p) {
   if (p.knee) half += `<g fill="${p.knee}"><circle cx="80" cy="44" r="${r}"/><circle cx="66" cy="64" r="${r}"/><circle cx="64" cy="104" r="${r}"/><circle cx="78" cy="132" r="${r}"/></g>`;
   if (p.tip) half += `<g fill="${p.tip}"><circle cx="73" cy="29" r="3.5"/><circle cx="53" cy="59" r="3.5"/><circle cx="51" cy="112" r="3.5"/><circle cx="72" cy="150" r="3.5"/></g>`;
   half += `<path d="M112 64 L106 46" stroke="${p.leg}" stroke-width="6" stroke-linecap="round"/>`;
+  // Pre-molt: the abdomen darkens and looks tight and shiny.
+  const dark = p.dark ? '<ellipse cx="120" cy="138" rx="28" ry="32" fill="#000" opacity=".4"/><ellipse cx="110" cy="128" rx="6" ry="12" fill="#fff" opacity=".22"/>' : '';
   return mirror(half)
-    + `<ellipse cx="120" cy="138" rx="28" ry="32" fill="${p.abdomen}"/>${p.marks || ''}`
+    + `<ellipse cx="120" cy="138" rx="28" ry="32" fill="${p.abdomen}"/>${p.marks || ''}${dark}`
     + `<ellipse cx="120" cy="82" rx="24" ry="22" fill="${p.carapace}"${p.rim ? ` stroke="${p.rim}" stroke-width="4"` : ''}/>`
     + `<circle cx="120" cy="76" r="4.5" fill="#4a3a30"/><circle cx="118" cy="75" r="1.4" fill="${W}"/><circle cx="122" cy="75" r="1.4" fill="${W}"/>`;
 }
 
-function redKnee() {
+function redKnee({ premolt }) {
   return tarantula({
+    dark: premolt,
     leg: INK, knee: '#e8792b', tip: '#f0c48a', abdomen: INK, carapace: INK, rim: '#d98a3a',
     marks: '<path d="M104 124 L100 118 M114 132 L112 124 M128 128 L130 120 M136 140 L140 134 M112 150 L108 146 M126 154 L128 148" stroke="#b5562a" stroke-width="2" stroke-linecap="round"/>',
   });
 }
 
 // Greenbottle blues change color as they grow: orange striped spiderlings, blue adults.
-function gbb({ stage }) {
+function gbb({ stage, premolt }) {
   if (stage === 0) {
     return tarantula({
+      dark: premolt,
       leg: '#7b86a0', knee: '#5b6680', kneeR: 4.5, abdomen: '#d9822b', carapace: '#8a7a62',
       marks: `<path d="M120 110 V166 M104 124 H136 M102 140 H138 M106 156 H134" stroke="${INK}" stroke-width="5" stroke-linecap="round"/>`,
     });
   }
   return tarantula({
+    dark: premolt,
     leg: '#3561c0', knee: '#23408a', kneeR: 4.5, abdomen: '#e8792b', carapace: '#4d8c7f',
     marks: `<path d="M120 112 L120 126 M106 130 L120 138 L134 130 M104 146 L120 154 L136 146 M108 160 L120 166 L132 160" stroke="${INK}" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
   });
@@ -211,10 +216,165 @@ function monarch({ morph }) {
     + `<circle cx="118" cy="92" r="1.5" fill="${W}"/><circle cx="122" cy="97" r="1.5" fill="${W}"/>`;
 }
 
-const ART = { redKnee, gbb, argiope, crab, peacock, scorpion, pinacate, bdfb, ladybird, grasshopper, bee, monarch };
+// ---------- Isopods ----------
+
+// Top-down isopod: segmented oval body, broad head, 14 legs just peeking out.
+function isopod(p) {
+  const rx = p.rx || 44;
+  const legs = `<g stroke="${p.leg}" stroke-width="3" stroke-linecap="round"><path d="M${120 - rx + 0} 70 l-7 2 M${120 - rx - 4} 86 l-7 2 M${120 - rx - 6} 102 l-7 1 M${120 - rx - 6} 118 l-7 1 M${120 - rx - 5} 134 l-7 2 M${120 - rx} 148 l-7 3 M${120 - rx + 6} 160 l-6 4"/></g>`;
+  const ant = `<path d="M102 40 Q82 22 70 18" stroke="${p.ant}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+  const tail = p.tail ? `<path d="M110 172 L102 192 M130 172 L138 192" stroke="${p.body}" stroke-width="5" stroke-linecap="round"/>` : '';
+  let segs = '';
+  [64, 80, 96, 112, 128, 144, 158, 168].forEach((y) => {
+    const hw = rx * Math.sqrt(Math.max(0, 1 - ((y - 108) / 70) ** 2));
+    segs += `M${(120 - hw).toFixed(1)} ${y} Q120 ${y + 8} ${(120 + hw).toFixed(1)} ${y} `;
+  });
+  return mirror(legs + ant) + tail
+    + `<ellipse cx="120" cy="108" rx="${rx}" ry="70" fill="${p.body}"/>`
+    + (p.patches || '')
+    + `<path d="${segs}" stroke="${p.line}" stroke-width="2.2" fill="none"/>`
+    + (p.spots ? `<g fill="${p.spots}"><circle cx="86" cy="88" r="3"/><circle cx="154" cy="88" r="3"/><circle cx="83" cy="104" r="3"/><circle cx="157" cy="104" r="3"/><circle cx="84" cy="120" r="3"/><circle cx="156" cy="120" r="3"/><circle cx="88" cy="136" r="3"/><circle cx="152" cy="136" r="3"/></g>` : '')
+    + `<ellipse cx="120" cy="48" rx="32" ry="17" fill="${p.head}"/>${p.headMark || ''}`
+    + `<circle cx="98" cy="48" r="3.2" fill="#1d1a17"/><circle cx="142" cy="48" r="3.2" fill="#1d1a17"/><circle cx="97" cy="47" r="1" fill="${W}"/><circle cx="141" cy="47" r="1" fill="${W}"/>`;
+}
+
+const pillbug = () => isopod({ body: '#5d5f66', head: '#55575e', line: '#44464c', leg: '#b9b4a6', ant: '#5d5f66', spots: '#8f9198', rx: 42 });
+const ducky = () => isopod({ body: '#4b4b52', head: '#efe2b0', line: '#33333a', leg: '#c9c2b0', ant: '#6b6b72', spots: '#9a9aa0', tail: true, headMark: '<ellipse cx="120" cy="38" rx="14" ry="7" fill="#e3c77a"/>' });
+const dairycow = () => isopod({
+  body: '#efece4', head: '#efece4', line: '#c9c4b8', leg: '#b9b4a6', ant: '#3a3a40', tail: true, rx: 46,
+  patches: '<g fill="#2b2b2f"><ellipse cx="100" cy="92" rx="14" ry="10"/><ellipse cx="146" cy="110" rx="12" ry="14"/><ellipse cx="108" cy="140" rx="12" ry="9"/><ellipse cx="136" cy="156" rx="8" ry="6"/></g>',
+  headMark: '<ellipse cx="132" cy="46" rx="10" ry="7" fill="#2b2b2f"/>',
+});
+
+// ---------- More arachnids ----------
+
+function woodlouse() {
+  const legs = `<g stroke="#c4532a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M106 68 L84 46 L74 24"/><path d="M102 76 L74 66 L52 60"/><path d="M102 86 L76 98 L58 112"/><path d="M106 94 L86 126 L78 156"/></g>`;
+  return mirror(legs)
+    + '<ellipse cx="120" cy="132" rx="20" ry="30" fill="#e7d8b8"/>'
+    + '<ellipse cx="111" cy="52" rx="6" ry="13" fill="#8f2f14"/><ellipse cx="129" cy="52" rx="6" ry="13" fill="#8f2f14"/>'
+    + '<path d="M109 40 Q114 34 118 40 M131 40 Q126 34 122 40" stroke="#1d1a17" stroke-width="2.5" fill="none" stroke-linecap="round"/>'
+    + '<ellipse cx="120" cy="78" rx="20" ry="18" fill="#b8441f"/><ellipse cx="113" cy="72" rx="5" ry="8" fill="#fff" opacity=".25"/>'
+    + '<g fill="#1d1a17"><circle cx="115" cy="66" r="2"/><circle cx="125" cy="66" r="2"/><circle cx="120" cy="64" r="1.8"/></g>';
+}
+
+function jumper(p) {
+  const legs = `<g stroke="${p.leg}" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M106 70 L88 56 L82 40" stroke-width="7"/><path d="M104 78 L84 74 L72 64" stroke-width="6"/><path d="M104 88 L82 100 L68 104" stroke-width="6"/><path d="M106 96 L90 118 L86 136" stroke-width="6"/></g>`
+    + (p.legBand ? `<g fill="${p.legBand}"><circle cx="88" cy="56" r="3.5"/><circle cx="84" cy="74" r="3"/><circle cx="82" cy="100" r="3"/><circle cx="90" cy="118" r="3"/></g>` : '');
+  return mirror(legs)
+    + `<ellipse cx="120" cy="126" rx="22" ry="28" fill="${p.abd}"/>${p.marks || ''}`
+    + `<ellipse cx="112" cy="48" rx="5" ry="6" fill="${p.fang}"/><ellipse cx="128" cy="48" rx="5" ry="6" fill="${p.fang}"/>`
+    + `<rect x="98" y="52" width="44" height="44" rx="16" fill="${p.body}"/>`
+    + '<circle cx="110" cy="60" r="7" fill="#0b0b0d"/><circle cx="130" cy="60" r="7" fill="#0b0b0d"/><circle cx="108" cy="58" r="2.2" fill="#fff"/><circle cx="128" cy="58" r="2.2" fill="#fff"/>'
+    + '<circle cx="100" cy="66" r="3" fill="#0b0b0d"/><circle cx="140" cy="66" r="3" fill="#0b0b0d"/>';
+}
+
+const WHITE = '#f2efe8';
+const spotsPattern = (c, big) => `<path d="M114 ${big ? 112 : 114} L126 ${big ? 112 : 114} L120 ${big ? 128 : 126} Z" fill="${c}"/><g fill="${c}"><circle cx="106" cy="132" r="${big ? 4.5 : 3.5}"/><circle cx="134" cy="132" r="${big ? 4.5 : 3.5}"/><circle cx="108" cy="146" r="${big ? 4 : 3}"/><circle cx="132" cy="146" r="${big ? 4 : 3}"/></g><path d="M100 104 Q120 96 140 104" stroke="${c}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+
+const bold = () => jumper({ leg: '#1d1a17', legBand: WHITE, abd: '#1d1a17', body: '#1d1a17', fang: '#2fae8a', marks: spotsPattern(WHITE, false) });
+
+function regal({ morph }) {
+  if (morph === 'orange') return jumper({ leg: '#9a4f22', legBand: WHITE, abd: '#e0782a', body: '#c9692a', fang: '#2fae8a', marks: spotsPattern(WHITE, true) });
+  if (morph === 'grey') return jumper({ leg: '#5d6068', legBand: WHITE, abd: '#8b8f94', body: '#7d8088', fang: '#2fae8a', marks: spotsPattern(WHITE, true) });
+  return jumper({
+    leg: '#1d1a17', legBand: WHITE, abd: '#1d1a17', body: '#1d1a17', fang: '#2fae8a',
+    marks: spotsPattern(WHITE, true) + `<path d="M100 120 Q96 138 104 152 M140 120 Q144 138 136 152" stroke="${WHITE}" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+  });
+}
+
+function harvestman() {
+  const legs = '<g stroke="#5a4632" stroke-width="2.5" fill="none" stroke-linecap="round"><path d="M112 98 Q80 20 30 8"/><path d="M110 102 Q50 50 6 70"/><path d="M110 108 Q50 140 8 152"/><path d="M112 112 Q80 190 40 198"/></g>';
+  return mirror(legs)
+    + '<ellipse cx="120" cy="105" rx="15" ry="12" fill="#a07e58"/><path d="M120 94 V116" stroke="#5a4632" stroke-width="5" stroke-linecap="round"/>'
+    + '<circle cx="117" cy="100" r="1.8" fill="#1d1a17"/><circle cx="123" cy="100" r="1.8" fill="#1d1a17"/>';
+}
+
+// ---------- More insects and millipedes ----------
+
+function millipede() {
+  const pts = [];
+  for (let i = 0; i <= 18; i++) {
+    const t = i / 18;
+    const x = 70 + 100 * t + 34 * Math.sin(t * Math.PI * 2);
+    const y = 24 + 150 * t;
+    const dx = 100 + 68 * Math.PI * Math.cos(t * Math.PI * 2);
+    const dy = 150;
+    const len = Math.hypot(dx, dy);
+    pts.push({ x, y, nx: -dy / len, ny: dx / len, r: i === 0 ? 9 : i > 15 ? 11 - (i - 15) * 1.5 : 11 });
+  }
+  let legs = '<g stroke="#d98a5a" stroke-width="2" stroke-linecap="round">';
+  pts.slice(1).forEach((p) => {
+    legs += `<path d="M${(p.x + p.nx * p.r).toFixed(1)} ${(p.y + p.ny * p.r).toFixed(1)} l${(p.nx * 6).toFixed(1)} ${(p.ny * 6).toFixed(1)} M${(p.x - p.nx * p.r).toFixed(1)} ${(p.y - p.ny * p.r).toFixed(1)} l${(-p.nx * 6).toFixed(1)} ${(-p.ny * 6).toFixed(1)}"/>`;
+  });
+  legs += '</g>';
+  let body = '';
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i];
+    body += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${p.r}" fill="${i === 0 ? '#2b1d18' : '#3a2a24'}" stroke="#c0452f" stroke-width="${i === 0 ? 0 : 1.6}"/>`;
+  }
+  const h = pts[0];
+  return legs + body
+    + `<path d="M${h.x - 4} ${h.y - 6} l-8 -10 M${h.x + 4} ${h.y - 6} l8 -10" stroke="#2b1d18" stroke-width="2.5" stroke-linecap="round"/>`
+    + `<circle cx="${h.x - 3}" cy="${h.y - 2}" r="1.3" fill="#fff"/><circle cx="${h.x + 3}" cy="${h.y - 2}" r="1.3" fill="#fff"/>`;
+}
+
+function earwig() {
+  const half = '<path d="M114 34 Q100 10 86 4" stroke="#5a2f1c" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-dasharray="4 2"/>'
+    + '<g stroke="#d8b48a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M110 62 L94 54 L88 44"/><path d="M108 76 L90 80 L82 90"/><path d="M110 88 L94 100 L90 112"/></g>'
+    + '<path d="M114 160 Q98 182 114 196" stroke="#4a2414" stroke-width="5" fill="none" stroke-linecap="round"/>';
+  let segs = '';
+  for (let y = 104; y <= 154; y += 10) segs += `M106 ${y} H134 `;
+  return mirror(half)
+    + '<path d="M104 96 H136 L132 160 Q120 166 108 160 Z" fill="#6b3a22"/>'
+    + `<path d="${segs}" stroke="#4a2414" stroke-width="1.5"/>`
+    + '<rect x="102" y="70" width="36" height="28" rx="8" fill="#b07a4a"/><path d="M120 70 V98" stroke="#7a4f2c" stroke-width="1.5"/>'
+    + '<rect x="106" y="52" width="28" height="18" rx="6" fill="#8a5a3a"/>'
+    + '<ellipse cx="120" cy="40" rx="11" ry="12" fill="#5a2f1c"/><circle cx="111" cy="38" r="2.4" fill="#1d1a17"/><circle cx="129" cy="38" r="2.4" fill="#1d1a17"/>';
+}
+
+function rosy() {
+  const half = '<path d="M120 78 C84 18 18 24 12 66 C12 102 72 108 120 96 Z" fill="#f59ac0"/>'
+    + '<path d="M114 84 C90 60 54 54 36 72 C60 84 90 90 114 90 Z" fill="#f7d84a"/>'
+    + '<path d="M120 96 C84 102 48 132 66 162 C90 168 114 138 120 102 Z" fill="#f7c0d4"/>'
+    + '<path d="M114 66 Q96 36 84 30 M104 54 l-8 2 M98 44 l-8 2" stroke="#f7d84a" stroke-width="3" fill="none" stroke-linecap="round"/>';
+  return mirror(half) + '<ellipse cx="120" cy="102" rx="15" ry="42" fill="#f7d84a"/><ellipse cx="120" cy="70" rx="12" ry="10" fill="#f2c230"/>';
+}
+
+function stag({ morph }) {
+  const pal = morph === 'gold' ? ['#d6a52a', '#f2e27a', '#b58418'] : morph === 'blue' ? ['#2f6fd1', '#7fd3e8', '#24509a'] : ['#2fa86a', '#d6c23a', '#1f7a4c'];
+  const [main, sheen, dark] = pal;
+  const half = `<g stroke="#1d2b25" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M106 72 L80 58 L66 36"/><path d="M102 100 L72 104 L52 122"/><path d="M106 122 L82 150 L74 178"/></g>`
+    + `<path d="M112 34 Q86 18 100 2" stroke="${dark}" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M98 14 l-6 -2" stroke="${dark}" stroke-width="4" stroke-linecap="round"/>`;
+  return mirror(half)
+    + `<ellipse cx="120" cy="130" rx="30" ry="44" fill="${main}"/>`
+    + `<path d="M120 90 V172" stroke="${dark}" stroke-width="2"/>`
+    + `<ellipse cx="102" cy="126" rx="5" ry="30" fill="${sheen}" opacity=".7"/><ellipse cx="138" cy="126" rx="5" ry="30" fill="${sheen}" opacity=".5"/>`
+    + `<ellipse cx="120" cy="72" rx="24" ry="16" fill="${main}"/><ellipse cx="112" cy="68" rx="8" ry="4" fill="${sheen}" opacity=".6"/>`
+    + `<ellipse cx="120" cy="46" rx="16" ry="11" fill="${dark}"/>`
+    + '<circle cx="106" cy="44" r="2.6" fill="#111"/><circle cx="134" cy="44" r="2.6" fill="#111"/>';
+}
+
+function hercules({ damp }) {
+  const shell = damp ? '#4a3a22' : '#b8a65a';
+  const spot = damp ? '#2b2010' : '#1d1a17';
+  const half = '<g stroke="#1d1a17" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"><path d="M104 74 L80 62 L68 44"/><path d="M98 104 L70 110 L54 128"/><path d="M102 128 L80 154 L72 180"/></g>';
+  return mirror(half)
+    + `<ellipse cx="120" cy="134" rx="34" ry="44" fill="${shell}"/>`
+    + `<path d="M120 94 V176" stroke="${spot}" stroke-width="2"/>`
+    + `<g fill="${spot}"><circle cx="104" cy="116" r="4"/><circle cx="136" cy="124" r="3.5"/><circle cx="110" cy="146" r="3"/><circle cx="132" cy="154" r="4"/><circle cx="100" cy="134" r="2.5"/><circle cx="142" cy="140" r="2.5"/></g>`
+    + `<ellipse cx="120" cy="78" rx="28" ry="20" fill="${shell}"/>`
+    + '<path d="M120 70 L120 6" stroke="#1d1a17" stroke-width="11" stroke-linecap="round"/><path d="M120 40 l-10 -4 M120 40 l10 -4" stroke="#1d1a17" stroke-width="4" stroke-linecap="round"/>'
+    + '<ellipse cx="120" cy="56" rx="12" ry="8" fill="#1d1a17"/>';
+}
+
+const ART = {
+  redKnee, gbb, argiope, crab, peacock, scorpion, pinacate, bdfb, ladybird, grasshopper, bee, monarch,
+  pillbug, ducky, dairycow, woodlouse, bold, regal, harvestman, millipede, earwig, rosy, stag, hercules,
+};
 
 export function creatureArt(sp, ctx = {}) {
-  return ART[sp.art]({ morph: ctx.morph || null, stage: ctx.stage ?? sp.stages.length - 1, damp: !!ctx.damp });
+  return ART[sp.art]({ morph: ctx.morph || null, stage: ctx.stage ?? sp.stages.length - 1, damp: !!ctx.damp, premolt: !!ctx.premolt });
 }
 
 export function creatureSVG(sp, ctx = {}, opts = {}) {
@@ -225,7 +385,14 @@ export function creatureSVG(sp, ctx = {}, opts = {}) {
 
 // ---------- Enclosure scene ----------
 
-export function sceneSVG(c, sp, ctx, label) {
+// Small top-down prey for leftovers, sized by prey type.
+function preySVG(x, y, size) {
+  const k = [0, 0.45, 0.7, 1, 1.25][size] || 1;
+  return `<g transform="translate(${x} ${y}) scale(${k})"><path d="M-14 -4 L-22 -10 M-14 4 L-22 10 M-4 -5 L-8 -14 M-4 5 L-8 14 M6 -5 L10 -14 M6 5 L10 14 M14 -2 L26 -12 M14 2 L26 12" stroke="#5a4028" stroke-width="2" stroke-linecap="round"/><ellipse rx="16" ry="6.5" fill="#8a6a3a"/><circle cx="-15" r="4.5" fill="#5a4028"/></g>`;
+}
+
+// env: { web, burrow, leftoverSize, colony, molting, dirty, dryDish }
+export function sceneSVG(c, sp, ctx, label, env = {}) {
   const desert = sp.set === 'desert';
   const deep = c.decor.includes('deep');
   const top = deep ? 166 : 190;
@@ -247,9 +414,31 @@ export function sceneSVG(c, sp, ctx, label) {
     s += `<path d="M236 ${top + 10} Q252 ${top - 48} 300 ${top - 42} Q334 ${top - 36} 344 ${top + 10} Z" fill="#9b7652"/><path d="M258 ${top - 22} Q276 ${top - 32} 300 ${top - 28}" stroke="#6e4f33" stroke-width="2" fill="none"/><ellipse cx="292" cy="${top + 6}" rx="22" ry="10" fill="#3b2a1d"/>`;
   }
   if (c.decor.includes('water')) {
-    s += `<ellipse cx="64" cy="${top + 28}" rx="34" ry="12" fill="#c9c2b4"/><ellipse cx="64" cy="${top + 26}" rx="26" ry="7.5" fill="#7cc4d8"/>`;
+    s += `<ellipse cx="64" cy="${top + 28}" rx="34" ry="12" fill="#c9c2b4"/><ellipse cx="64" cy="${top + 26}" rx="26" ry="7.5" fill="${env.dryDish ? '#a8a092' : '#7cc4d8'}"/>`;
   }
-  s += `<svg x="80" y="${top - 140}" width="190" height="158" viewBox="0 0 240 200"><g class="critter">${creatureArt(sp, ctx)}</g></svg>`;
+  if (env.burrow > 0.25 && deep) {
+    const r = 10 + 14 * env.burrow;
+    s += `<ellipse cx="196" cy="${top + 14}" rx="${r + 10}" ry="${r * 0.45 + 4}" fill="${sub2}"/><ellipse cx="196" cy="${top + 14}" rx="${r}" ry="${r * 0.4}" fill="#2b1d14"/>`;
+  }
+  if (env.dirty) {
+    s += `<g fill="#5a4636" opacity=".8"><circle cx="120" cy="${top + 30}" r="3"/><circle cx="230" cy="${top + 40}" r="2.5"/><circle cx="170" cy="${top + 50}" r="3.5"/><circle cx="300" cy="${top + 22}" r="2.5"/></g>`;
+  }
+  if (env.colony) {
+    const n = Math.min(10, env.colony);
+    const spots = [[60, 0], [150, 12], [250, 4], [110, 30], [200, 36], [30, 40], [290, 34], [170, 54], [80, 58], [320, 56]];
+    for (let i = 0; i < n; i++) {
+      const [x, dy] = spots[i];
+      s += `<svg x="${x - 22}" y="${top - 14 + dy}" width="44" height="37" viewBox="0 0 240 200"><g transform="rotate(${(i * 47) % 360} 120 100)">${creatureArt(sp, ctx)}</g></svg>`;
+    }
+  } else {
+    const flip = env.molting ? ' transform="rotate(180 120 100)"' : '';
+    s += `<svg x="80" y="${top - 140}" width="190" height="158" viewBox="0 0 240 200"><g class="critter"><g${flip}>${creatureArt(sp, ctx)}</g></g></svg>`;
+  }
+  if (env.leftoverSize) s += preySVG(290, top + 16, env.leftoverSize);
+  if (env.web > 0.05) {
+    const o = (0.15 + env.web * 0.55).toFixed(2);
+    s += `<g stroke="#fff" stroke-width="1.4" fill="none" opacity="${o}"><path d="M0 0 L140 ${top - 10} M0 40 L120 ${top - 6} M60 0 L150 ${top - 14} M350 0 L230 ${top - 8} M350 50 L250 ${top - 4}"/><path d="M20 22 Q60 20 70 0 M30 60 Q80 60 100 10 M40 100 Q100 100 128 30 M320 30 Q290 20 290 0 M310 80 Q260 70 250 10"/>${env.web > 0.6 ? `<path d="M0 ${top - 30} Q175 ${top - 60} 350 ${top - 30}" stroke-width="2"/><path d="M0 ${top - 10} Q175 ${top - 34} 350 ${top - 12}"/>` : ''}</g>`;
+  }
   s += '<path d="M300 0 L340 0 L200 250 L160 250 Z" fill="#fff" opacity=".07"/>';
   return `<svg viewBox="0 0 350 250" class="scene-svg" role="img" aria-label="${esc(label)}">${s}</svg>`;
 }
@@ -264,6 +453,7 @@ const PLOT_ART = {
   sandbank: () => '<path d="M10 100 Q40 40 90 46 Q140 50 152 100 Z" fill="#e3c58e"/><g fill="#7a5a36"><circle cx="60" cy="70" r="3"/><circle cx="84" cy="62" r="3"/><circle cx="104" cy="76" r="3"/><circle cx="74" cy="84" r="3"/></g><g fill="#b9a98a"><ellipse cx="30" cy="94" rx="10" ry="6"/><ellipse cx="132" cy="92" rx="12" ry="7"/></g>',
   beehotel: () => '<path d="M52 30 L80 12 L108 30 Z" fill="#7a4f2c"/><rect x="56" y="30" width="48" height="52" rx="3" fill="#b07a4a"/><g fill="#3a2a1d"><circle cx="66" cy="40" r="3.2"/><circle cx="76" cy="40" r="3.2"/><circle cx="86" cy="40" r="3.2"/><circle cx="96" cy="40" r="3.2"/><circle cx="66" cy="52" r="3.2"/><circle cx="76" cy="52" r="3.2"/><circle cx="86" cy="52" r="3.2"/><circle cx="96" cy="52" r="3.2"/><circle cx="66" cy="64" r="3.2"/><circle cx="76" cy="64" r="3.2"/><circle cx="86" cy="64" r="3.2"/><circle cx="96" cy="64" r="3.2"/></g><path d="M80 82 V96" stroke="#7a4f2c" stroke-width="5"/>' + flower(30, 80, '#f59ac0') + flower(132, 76, '#ffffff'),
   logpile: () => '<rect x="44" y="70" width="80" height="20" rx="10" fill="#8a5f3c"/><rect x="38" y="50" width="74" height="20" rx="10" fill="#9b6c45"/><rect x="54" y="30" width="62" height="20" rx="10" fill="#8a5f3c"/><g fill="#d9ab78" stroke="#8a5f3c" stroke-width="1.5"><circle cx="44" cy="80" r="10"/><circle cx="38" cy="60" r="10"/><circle cx="54" cy="40" r="10"/></g><g fill="none" stroke="#8a5f3c"><circle cx="44" cy="80" r="4.5"/><circle cx="38" cy="60" r="4.5"/><circle cx="54" cy="40" r="4.5"/></g>',
+  woodland: () => '<rect width="160" height="100" fill="#8fbf7a"/><g fill="#6b4a2c"><rect x="28" y="30" width="10" height="64"/><rect x="104" y="20" width="12" height="74"/></g><g fill="#3f7a46"><circle cx="33" cy="26" r="24"/><circle cx="110" cy="18" r="28"/><circle cx="70" cy="30" r="20"/></g><path d="M56 96 Q60 76 70 72 M64 96 Q72 80 84 80 M140 96 Q138 80 128 74" stroke="#2f6b3a" stroke-width="3" fill="none" stroke-linecap="round"/><g fill="#f7f0a0"><circle cx="60" cy="58" r="2.5"/><circle cx="96" cy="66" r="2.5"/><circle cx="136" cy="52" r="2.5"/></g>',
   pond: () => '<ellipse cx="80" cy="60" rx="58" ry="30" fill="#8cc9e0"/><ellipse cx="80" cy="60" rx="48" ry="22" fill="#9fd6ea"/><path d="M64 66 a10 7 0 1 0 10 -5 L66 64 Z" fill="#5f9e4e"/><path d="M128 50 V20 M136 54 V28 M24 52 V30" stroke="#4f7f3f" stroke-width="3" stroke-linecap="round"/>',
   rockery: () => '<g fill="#a9a8a0"><ellipse cx="50" cy="78" rx="30" ry="18"/><ellipse cx="104" cy="80" rx="34" ry="20"/><ellipse cx="78" cy="52" rx="26" ry="18"/></g><g fill="#c4c3bb"><ellipse cx="44" cy="72" rx="12" ry="6"/><ellipse cx="72" cy="46" rx="10" ry="5"/></g><path d="M128 64 L132 50 L136 64 M20 90 L24 78 L28 90" stroke="#5f9e4e" stroke-width="3" fill="none" stroke-linecap="round"/>' + flower(140, 50, '#f2c230', '#b2620f'),
 };

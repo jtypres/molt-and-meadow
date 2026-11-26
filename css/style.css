@@ -246,3 +246,32 @@ main { padding: 16px; display: flex; flex-direction: column; gap: 16px; outline:
   .brand { display: none; }
   .plots { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- Keeper Update ---------- */
+.litter { background: #efe2cc; }
+.night { background: #e4def3; }
+.jar-panel.litter, .jar-panel.night { background: var(--night); }
+.tab .dot.warn { background: #f3b3a8; color: #6b1a12; }
+.seg button { padding: 0 6px; text-align: center; line-height: 1.15; }
+
+.scene-size { position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, .88); color: var(--ink); border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 800; }
+.exuvia { position: absolute; left: 4%; bottom: 4%; width: 30%; filter: grayscale(1) sepia(.35) brightness(1.75) contrast(.8); opacity: .75; transform: rotate(-12deg); pointer-events: none; }
+.exuvia svg { width: 100%; height: auto; }
+.behavior { font-size: 14px; font-style: italic; color: var(--muted); margin-top: -8px; text-align: center; }
+.alerts { display: flex; flex-direction: column; gap: 8px; }
+.alerts .btn { width: 100%; }
+.btn.alert { background: #fbe3df; color: #7a1d14; border: 1px solid #efb9b0; }
+.btn.alert:hover { background: #f8d4ce; }
+.actions .btn { min-height: 52px; }
+
+.prey-list { display: flex; flex-direction: column; gap: 8px; }
+.prey { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 2px 10px; align-items: center; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; min-height: 56px; cursor: pointer; }
+.prey:hover { border-color: #b9d3a6; }
+.prey .chip { grid-row: span 2; }
+.prey.cant { opacity: .5; }
+
+.chart { width: 100%; height: auto; }
+.album, .log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.album li { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; font-size: 14px; }
+.molt-badge { width: 28px; height: 28px; border-radius: 50%; background: #fff1c7; color: #6b4d00; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
+.log li { display: grid; grid-template-columns: 64px 1fr; gap: 8px; font-size: 14px; line-height: 1.35; }

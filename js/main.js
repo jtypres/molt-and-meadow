@@ -1,11 +1,12 @@
 import {
   S, load, save, resetGame, advance, pollenPerSec, restorePlot, upgradePlot,
-  openJar, buyJar, getCreature, feed, mist, buyDecor,
+  openJar, buyJar, getCreature, feed, mist, buyDecor, removeDecor,
+  refill, removeLeftover, cleanEnclosure, rehouse, collectExuvia, examineExuvia, shareColony,
   exportSave, exportCode, importSave, markBackedUp, snoozeBackup,
-} from './state.js?v=202611191045';
-import { BY_ID, SPEED } from './data.js?v=202611191045';
-import * as UI from './screens.js?v=202611191045';
-import { fmt, fmtRate, fmtDur } from './util.js?v=202611191045';
+} from './state.js?v=202611252038';
+import { SPEED, UPDATE_ID, DECOR } from './data.js?v=202611252038';
+import * as UI from './screens.js?v=202611252038';
+import { fmt, fmtRate, fmtDur } from './util.js?v=202611252038';
 
 const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 const touch = window.matchMedia('(pointer: coarse)').matches;
@@ -20,7 +21,7 @@ const $ = (sel) => document.querySelector(sel);
 function render() {
   const now = Date.now();
   $('#topbar').innerHTML = UI.topbar(now);
-  $('#tabs').innerHTML = UI.tabs(ui.route);
+  $('#tabs').innerHTML = UI.tabs(ui.route, now);
   let html;
   if (ui.route === 'finds') html = UI.findsScreen(now, ui);
   else if (ui.route === 'shelf') html = UI.shelfScreen(now);
@@ -172,6 +173,18 @@ function doOpenJar(set) {
   }, reduce ? 0 : 700);
 }
 
+// Runs a care action on the pet named by data-id and shows its message.
+function care(el, fn) {
+  const c = getCreature(Number(el.dataset.id));
+  if (!c) return;
+  const r = fn(c, Date.now());
+  if (r && r.need) { needMsg(r.need); return; }
+  if (r && r.msg) ui.msg[c.id] = r.msg;
+  closeModal();
+  save();
+  render();
+}
+
 const actions = {
   restore(el) {
     const r = restorePlot(el.dataset.id, Date.now());
@@ -192,27 +205,27 @@ const actions = {
     if (!r.ok) return needMsg(r.need, 'silk');
     save(); render(); toast('Traded silk for a jar.');
   },
-  feed(el) {
-    const c = getCreature(Number(el.dataset.id));
-    ui.msg[c.id] = feed(c, Date.now());
-    save(); render();
-  },
-  mist(el) {
-    const c = getCreature(Number(el.dataset.id));
-    ui.msg[c.id] = mist(c, Date.now());
-    save(); render();
-  },
+  'feed-menu'(el) { openModal(UI.preyModal(getCreature(Number(el.dataset.id)))); },
+  feed(el) { care(el, (c, now) => feed(c, now, el.dataset.prey)); },
+  mist(el) { care(el, mist); },
+  refill(el) { care(el, refill); },
+  'remove-leftover'(el) { care(el, removeLeftover); },
+  clean(el) { care(el, cleanEnclosure); },
+  rehouse(el) { care(el, rehouse); },
+  'collect-molt'(el) { care(el, collectExuvia); },
+  examine(el) { care(el, examineExuvia); },
+  'share-colony'(el) { care(el, shareColony); },
   decor(el) {
     const c = getCreature(Number(el.dataset.id));
-    const r = buyDecor(c, el.dataset.key);
+    const r = buyDecor(c, el.dataset.key, Date.now());
     if (!r.ok && r.need) return needMsg(r.need);
-    if (r.ok) ui.msg[c.id] = `${c.name} has a new ${el.dataset.key === 'deep' ? 'layer of deep substrate' : 'addition'} to explore.`;
+    if (r.ok) ui.msg[c.id] = `${c.name} has a new ${DECOR[el.dataset.key].name.toLowerCase()} to explore.`;
     save(); render();
   },
   'remove-decor'(el) {
     const c = getCreature(Number(el.dataset.id));
-    c.decor = c.decor.filter((k) => k !== el.dataset.key);
-    ui.msg[c.id] = `You took it out of ${c.name}'s enclosure.`;
+    removeDecor(c, el.dataset.key, Date.now());
+    ui.msg[c.id] = `You took the ${DECOR[el.dataset.key].name.toLowerCase()} out of ${c.name}'s enclosure.`;
     save(); render();
   },
   rename(el) { openModal(UI.renameModal(getCreature(Number(el.dataset.id)))); },
@@ -283,9 +296,10 @@ function tick() {
   const now = Date.now();
   const ev = advance(now);
   ev.restored.forEach((p) => toast(`${p.name} is restored!`));
-  ev.molted.forEach((c) => toast(`${c.name} molted! Now a ${BY_ID[c.speciesId].stages[c.stage].toLowerCase()}.`));
+  ev.molted.forEach((c) => toast(`${c.name} molted! Collect the shed skin.`));
+  ev.grew.forEach((c) => toast(`${c.name}'s colony grew to ${c.colony}.`));
   if (ev.jars) toast(ev.jars === 1 ? 'You found a new jar!' : `You found ${ev.jars} new jars!`);
-  const changed = ev.restored.length || ev.molted.length || ev.jars;
+  const changed = ev.restored.length || ev.molted.length || ev.grew.length || ev.jars;
   ticks++;
   const refreshPet = ui.route.startsWith('creature:') && ticks % 15 === 0;
   if ((changed || refreshPet) && !ui.modal && !ui.busy) render();
@@ -302,8 +316,13 @@ function boot() {
   protectStorage();
   if (isNew || !S.seenIntro) {
     S.seenIntro = true;
+    S.seenUpdate = UPDATE_ID;
     save();
     openModal(UI.introModal());
+  } else if (S.seenUpdate < UPDATE_ID) {
+    S.seenUpdate = UPDATE_ID;
+    save();
+    openModal(UI.whatsNewModal());
   } else if (ev.seconds > 60 && ev.pollen >= 1) {
     openModal(UI.welcomeBackModal(ev));
   }
